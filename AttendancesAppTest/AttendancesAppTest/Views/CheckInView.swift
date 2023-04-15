@@ -9,43 +9,41 @@ import SwiftUI
 
 struct CheckInView: View {
     var attendance: Attendance
-    
-//    @State var selectedDate = Date()
-    
-    var dateFormatter: DateFormatter {
-        let dateFormatter = DateFormatter()
-        dateFormatter.dateFormat = "MM/dd HH:mm"
-        return dateFormatter
-    }
+    @State var selectedDate = Date()
+    @State private var isLoading = false
     
     private func updateAttendance(attendance: Attendance) {
-        
+        self.isLoading = true
         HTTPClient().updateAttendance(attendance) { success in
             if success {
                 print("Attendance updated successfully.")
+                HTTPClient().readData()
             } else {
                 print("Attendance update failed.")
+            }
+            DispatchQueue.main.async {
+                self.isLoading = false
             }
         }
     }
     
     var body: some View {
-//        Text("\(attendance.checkInTime)" as String)
         if attendance.checkInTime != Date(timeIntervalSince1970: 0) { // Check In Button For Section A
-//            Text("\(attendance.checkInTime, formatter: dateFormatter)")
-            Text("\(attendance.checkInTime)" as String)
+            Text(attendance.checkInTime.formatted(date: .omitted, time: .standard))
         } else {
-            Button(action: {
-                
-            }) {
-                Text("Check In")
-            }
-            .onTapGesture {
-                
-                let attendance = Attendance(id: attendance.id, trackstudent_id: attendance.trackstudent_id, date: attendance.date, sessionNumber: attendance.sessionNumber, checkInTime: Date(), checkOutTime: attendance.checkOutTime)
-                
-                self.updateAttendance(attendance: attendance)
-                
+            if isLoading {
+                ProgressView()
+            } else {
+                Button(action: {}) {
+                    Text("Check In")
+                }
+                .onTapGesture {
+                    let hoursInSeconds: TimeInterval = 60 * 60
+                    let date = attendance.date.addingTimeInterval(hoursInSeconds * 7)
+                    
+                    let attendance = Attendance(id: attendance.id, trackstudent_id: attendance.trackstudent_id, date: date, sessionNumber: attendance.sessionNumber, checkInTime: Date(), checkOutTime: attendance.checkOutTime)
+                    self.updateAttendance(attendance: attendance)
+                }
             }
         }
     }

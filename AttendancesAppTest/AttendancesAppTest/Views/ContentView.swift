@@ -22,23 +22,18 @@ struct ContentView: View {
                     Image(systemName: "2.circle")
                     Text("TrackView")
                 }
-            SessionView(data: data)
-                .tabItem {
-                    Image(systemName: "3.circle")
-                    Text("SessionView")
-                }
-            AttendanceView(data: data)
-                .tabItem {
-                    Image(systemName: "4.circle")
-                    Text("AttendanceView")
-                }
+//            SessionView(data: data)
+//                .tabItem {
+//                    Image(systemName: "3.circle")
+//                    Text("SessionView")
+//                }
+//            AttendanceView(data: data)
+//                .tabItem {
+//                    Image(systemName: "4.circle")
+//                    Text("AttendanceView")
+//                }
         }
         .onAppear {
-//            self.data.readTrack()
-//            self.data.readStudent()
-//            self.data.readTrackStudent()
-//            self.data.readAttendance()
-//            self.data.readSession()
             self.data.readData()
         }
     }

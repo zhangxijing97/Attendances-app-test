@@ -8,31 +8,17 @@
 import SwiftUI
 
 struct AddTrackView: View {
-    @Environment(\.dismiss) var dismiss
+    // Changed to presentationMode
+    @Environment(\.presentationMode) var presentationMode
     
-    @State private var name = "Track X"
+    @State private var name = "Track A"
     @State private var level = "Grades 6-9"
     @State private var location = "ASU Mesa MIX Center"
     
     @State private var startDate = Date()
-//    @State private var startDate: Date = {
-//        let timeZone = TimeZone(identifier: "UTC")!
-//        let calendar = Calendar(identifier: .gregorian)
-//        let now = Date()
-//        let components = calendar.dateComponents(in: timeZone, from: now)
-//        return calendar.date(from: components)!
-//    }()
-    
-    
     @State private var numberOfDays = 4
     private var endDate: Date {
         return Calendar.current.date(byAdding: .day, value: numberOfDays, to: startDate)!
-        
-//        let timeZone = TimeZone(identifier: "America/Phoenix")!
-//        let calendar = Calendar(identifier: .gregorian)
-//        let components = calendar.dateComponents(in: timeZone, from: startDate)
-//        let newComponents = DateComponents(year: components.year, month: components.month, day: components.day! + numberOfDays)
-//        return calendar.date(from: newComponents)!
     }
     @State private var numberOfSessions = 1
     
@@ -69,8 +55,6 @@ struct AddTrackView: View {
     
     // Function for combining two Date, get one Date part and get one time part
     func combine(date: Date, time: Date) -> Date {
-//        let calendar = Calendar.current
-//        let timeZone = TimeZone(identifier: "America/Phoenix")!
         let calendar = Calendar(identifier: .gregorian)
         
         let dateComponents = calendar.dateComponents([.year, .month, .day], from: date)
@@ -83,19 +67,19 @@ struct AddTrackView: View {
         combinedComponents.hour = timeComponents.hour
         combinedComponents.minute = timeComponents.minute
         combinedComponents.second = timeComponents.second
-//        combinedComponents.timeZone = timeZone
         
         return calendar.date(from: combinedComponents)!
     }
     
     private func createTrack() {
-        let track = Track(id: UUID(), name: self.name, level: self.level, location: self.level, startDate: self.startDate, endDate: self.endDate, sessions: self.sessions)
+        let track = Track(id: UUID(), name: self.name, level: self.level, location: self.location, startDate: self.startDate, endDate: self.endDate, sessions: self.sessions)
         
         HTTPClient().createTrack(id: track.id, name: track.name, level: track.level, location: track.location, startDate: track.startDate, endDate: track.endDate, sessions: track.sessions) { success in
             if success {
                 // close the modal
                 print("Track create successfully")
                 createSessions(track: track)
+                HTTPClient().readData()
             } else {
                 // show user the error message that save was not successful
                 print("Failed to create track")
@@ -115,6 +99,7 @@ struct AddTrackView: View {
                 HTTPClient().createSession(track_id: track.id, sessionNumber: String(index), date: date, startTime: combine(date: date, time: self.startTimes[index]), endTime: combine(date: date, time: self.endTimes[index])) { success in
                     if success {
                         print("Session create successfully")
+                        HTTPClient().readData()
                     } else {
                         // show user the error message that save was not successful
                         print("Failed to create Session")
@@ -127,12 +112,15 @@ struct AddTrackView: View {
     var body: some View {
         NavigationView {
             List {
-                TextField("Name", text: $name)
-                TextField("Level", text: $level)
-                TextField("Location", text: $location)
-                
+                Section(header: Text("Track Information")) {
+                    TextField("Track Name", text: $name)
+                    TextField("Level", text: $level)
+                    TextField("Location", text: $location)
+                }
+
                 // The View to select startDate and endDate
-                VStack {
+                
+                Section(header: Text("Dates")) {
                     DatePicker(
                         "Start Date",
                         selection: $startDate,
@@ -156,41 +144,45 @@ struct AddTrackView: View {
                         displayedComponents: [.date]
                     )
                 }
-                Stepper(
-                    value: $numberOfSessions,
-                    in: 1...10,
-                    label: { Text("Number of Sessions: \(numberOfSessions)") }
-                )
-                .onChange(of: numberOfSessions) { _ in
-                    updateSessions()
-                }
-                
-                ForEach(sessions.indices, id: \.self) { index in
-                    VStack {
-                        TextField("Session \(index + 1)", text: $sessions[index])
-                        DatePicker(
-                            "Start Date",
-                            selection: $startTimes[index],
-                            displayedComponents: [.hourAndMinute]
-                        )
-                        
-                        DatePicker(
-                            "End Date",
-                            selection: $endTimes[index],
-                            displayedComponents: [.hourAndMinute]
-                        )
+
+                Section(header: Text("Sessions")) {
+                    Stepper(
+                        value: $numberOfSessions,
+                        in: 1...10,
+                        label: { Text("Number of Sessions: \(numberOfSessions)") }
+                    )
+                    .onChange(of: numberOfSessions) { _ in
+                        updateSessions()
+                    }
+                    
+                    ForEach(sessions.indices, id: \.self) { index in
+                        VStack {
+                            TextField("Session \(index + 1) Name", text: $sessions[index])
+//                            TextField("Session \(index + 1)", text: $sessions[index])
+                            DatePicker(
+                                "Start Time",
+                                selection: $startTimes[index],
+                                displayedComponents: [.hourAndMinute]
+                            )
+                            
+                            DatePicker(
+                                "End Time",
+                                selection: $endTimes[index],
+                                displayedComponents: [.hourAndMinute]
+                            )
+                        }
                     }
                 }
-                
+
             }
-            .navigationTitle("Add new Track")
-            .toolbar {
-                Button("Save") {
-                    self.createTrack()
-                    HTTPClient().readData()
-                    dismiss()
-                }
-            }
+            .navigationBarTitle("Add Track", displayMode: .inline)
+            .navigationBarItems(leading: Button("Cancel") {
+                self.presentationMode.wrappedValue.dismiss()
+            }, trailing: Button("Save") {
+                self.createTrack()
+                HTTPClient().readData()
+                self.presentationMode.wrappedValue.dismiss()
+            })
         }
     }
 }

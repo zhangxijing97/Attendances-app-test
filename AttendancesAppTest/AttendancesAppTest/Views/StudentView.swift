@@ -16,6 +16,7 @@ struct StudentView: View {
         HTTPClient().updateStudent(student) { success in
             if success {
                 print("Student updated successfully.")
+                self.data.readData()
             } else {
                 print("Student update failed.")
             }

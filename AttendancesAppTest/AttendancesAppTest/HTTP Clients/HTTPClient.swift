@@ -33,5 +33,7 @@ class HTTPClient: ObservableObject {
         self.readSession()
     }
     
-//    192.168.0.219:8080
+// 192.168.0.219
+// 192.168.0.123
+// 172.20.10.1
 }

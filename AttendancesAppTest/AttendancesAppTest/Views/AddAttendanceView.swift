@@ -20,6 +20,7 @@ struct AddAttendanceView: View {
         HTTPClient().createAttendance(trackstudent_id: self.trackstudent_id, date: self.date, sessionNumber: self.sessionNumber, checkInTime: self.checkInTime, checkOutTime: self.checkOutTime) { success in
             if success {
                 print("Attendance create successfully")
+                HTTPClient().readData()
             } else {
                 // show user the error message that save was not successful
                 print("Failed to create Attendance ")

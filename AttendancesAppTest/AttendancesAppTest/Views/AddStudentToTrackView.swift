@@ -17,37 +17,67 @@ struct AddStudentToTrackView: View {
         return students
     }
     
-    var sessions: [Session] {
-        let sessions = data.getSessionsForTrack(data: data, track: track)
-        return sessions
-    }
-    
     var studentsForTrack: [Student] {
         let students = data.getStudentsForTrack(data: data, track: track)
         return students
     }
     
+    var sessions: [Session] {
+        let sessions = data.getSessionsForTrack(data: data, track: track)
+        return sessions
+    }
+    
+//    private func createTrackStudent(student: Student) {
+//        let trackStudent = TrackStudent(id: UUID(), track_id: track.id, student_id: student.id)
+//
+//        HTTPClient().createTrackStudent(id: trackStudent.id, track_id: track.id, student_id: student.id) { success in
+//            if success {
+//                print("TrackStudent create successfully")
+//                createAttendances(trackstudent_id: trackStudent.id)
+//                self.data.readData()
+//            } else {
+//                // show user the error message that save was not successful
+//                print("Failed to create TrackStudent")
+//            }
+//        }
+//    }
+    
     private func createTrackStudent(student: Student) {
-        let trackStudent = TrackStudent(id: UUID(), track_id: track.id, student_id: student.id)
-        
-        HTTPClient().createTrackStudent(id: trackStudent.id, track_id: track.id, student_id: student.id) { success in
-            if success {
-                print("TrackStudent create successfully")
-                createAttendances(trackstudent_id: trackStudent.id)
-            } else {
-                // show user the error message that save was not successful
-                print("Failed to create TrackStudent")
+        // Check if a TrackStudent with the given track and student id already exists
+        guard let existingTrackStudent = data.trackstudents.first(where: { $0.track_id == track.id && $0.student_id == student.id }) else {
+            // Create a new TrackStudent
+            let trackStudent = TrackStudent(id: UUID(), track_id: track.id, student_id: student.id)
+
+            HTTPClient().createTrackStudent(id: trackStudent.id, track_id: track.id, student_id: student.id) { success in
+                if success {
+                    print("TrackStudent create successfully")
+                    createAttendances(trackstudent_id: trackStudent.id)
+                    self.data.readData()
+                } else {
+                    // show user the error message that save was not successful
+                    print("Failed to create TrackStudent")
+                }
             }
+            return
         }
+
+        // If the TrackStudent already exists, print a message and call createAttendances
+        print("TrackStudent already exists")
+        createAttendances(trackstudent_id: existingTrackStudent.id)
+        self.data.readData()
     }
     
     private func createAttendances(trackstudent_id: UUID) {
         let checkInTime = Date(timeIntervalSince1970: 0)
         let checkOutTime = Date(timeIntervalSince1970: 0)
+        let hoursInSeconds: TimeInterval = 60 * 60
+        
         for session in sessions {
-            HTTPClient().createAttendance(trackstudent_id: trackstudent_id, date: session.date, sessionNumber: session.sessionNumber, checkInTime: checkInTime, checkOutTime: checkOutTime) { success in
+            let date = session.date.addingTimeInterval(hoursInSeconds * 7)
+            HTTPClient().createAttendance(trackstudent_id: trackstudent_id, date: date, sessionNumber: session.sessionNumber, checkInTime: checkInTime, checkOutTime: checkOutTime) { success in
                 if success {
                     print("Attendance create successfully")
+                    self.data.readData()
                 } else {
                     // show user the error message that save was not successful
                     print("Failed to create Attendance")
@@ -64,6 +94,7 @@ struct AddStudentToTrackView: View {
             if success {
                 print("TrackStudent delete successfully")
                 removeAttendances(trackstudent_id: trackStudent.id)
+                self.data.readData()
             } else {
                 // show user the error message that delete was not successful
                 print("Failed to delete TrackStudent")
@@ -78,6 +109,7 @@ struct AddStudentToTrackView: View {
             HTTPClient().deleteAttendance(attendance: attendance) { success in
                 if success {
                     print("Attendance delete successfully")
+                    self.data.readData()
                 } else {
                     print("Failed to delete Attendance")
                 }
@@ -109,6 +141,7 @@ struct AddStudentToTrackView: View {
                         } else {
                             // Add the student to the track
                             self.createTrackStudent(student: student)
+                            
                         }
                     }) {
                         if data.getTrackStudentForTrackAndStudent(data: data, track: track, student: student) != nil {

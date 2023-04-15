@@ -16,33 +16,20 @@ struct TrackView: View {
             List {
                 Text("Count: \(data.tracks.count)")
                 ForEach(data.tracks, id: \.id) { track in
-//                    Text(track.name)
-                    
-                    NavigationLink {
-                        TrackDetailView(data: data, track: track)
-                    } label: {
+                    NavigationLink(destination: TrackDetailView(data: data, track: track)) {
                         Text(track.name)
                     }
-                    
                 }
             }
             .navigationTitle("Tracks")
-            .navigationBarItems(trailing: Button(action: {
-                self.isPresented = true
-            }){
+            .navigationBarItems(trailing: Button(action: { self.isPresented = true }) {
                 Image(systemName: "plus")
             })
-            .onAppear {
-                self.data.readData()
-            }
+            .onAppear { self.data.readData() }
         }
-        .sheet(isPresented: $isPresented, onDismiss: {
-            self.data.readData()
-        }, content: {
+        .sheet(isPresented: $isPresented, onDismiss: { self.data.readData() }) {
             AddTrackView()
-            EmptyView()
-            
-        })
+        }
     }
 }
 

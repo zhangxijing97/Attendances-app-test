@@ -26,6 +26,7 @@ struct AddStudentView: View {
             if success {
                 // close the modal
                 print("Student create successfully")
+                HTTPClient().readData()
             } else {
                 // show user the error message that save was not successful
                 print("Failed to create student")
