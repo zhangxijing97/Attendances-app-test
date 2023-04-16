@@ -11,7 +11,6 @@ struct TrackDetailView: View {
     @ObservedObject var data: HTTPClient
     var track: Track
     @State private var showingAddStudentToTrackView = false
-    
     @State var selectedDate = Date()
     
     var startOfWeek = Calendar.current.date(from: DateComponents(year: 2023, month: 2, day: 13))!
@@ -125,6 +124,7 @@ struct TrackDetailView: View {
                     Spacer()
                     Button {
                         showingAddStudentToTrackView.toggle()
+                        
                     } label: {
                         HStack {
                             Image(systemName: "slider.horizontal.3")
@@ -148,7 +148,7 @@ struct TrackDetailView: View {
                                 Text(students![index].name)
                             }
                             Spacer()
-                            CheckInView(attendance: attendances![index])
+                            CheckInView(data: data, attendance: attendances![index], onUpdate: {self.data.readData()})
                             Spacer()
                             CheckOutView(attendance: attendances![index])
                             Spacer()

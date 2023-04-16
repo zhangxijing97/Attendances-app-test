@@ -27,21 +27,6 @@ struct AddStudentToTrackView: View {
         return sessions
     }
     
-//    private func createTrackStudent(student: Student) {
-//        let trackStudent = TrackStudent(id: UUID(), track_id: track.id, student_id: student.id)
-//
-//        HTTPClient().createTrackStudent(id: trackStudent.id, track_id: track.id, student_id: student.id) { success in
-//            if success {
-//                print("TrackStudent create successfully")
-//                createAttendances(trackstudent_id: trackStudent.id)
-//                self.data.readData()
-//            } else {
-//                // show user the error message that save was not successful
-//                print("Failed to create TrackStudent")
-//            }
-//        }
-//    }
-    
     private func createTrackStudent(student: Student) {
         // Check if a TrackStudent with the given track and student id already exists
         guard let existingTrackStudent = data.trackstudents.first(where: { $0.track_id == track.id && $0.student_id == student.id }) else {
