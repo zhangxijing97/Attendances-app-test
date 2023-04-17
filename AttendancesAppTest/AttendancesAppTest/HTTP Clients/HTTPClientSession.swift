@@ -17,7 +17,7 @@ extension HTTPClient {
             fatalError("URL is not defined!")
         }
         
-        let session = Session(id: UUID(), track_id: track_id, sessionNumber: sessionNumber, date: date, startTime: startTime, endTime: endTime)
+        let session = Session(id: UUID(), track_id: track_id, date: date, sessionNumber: sessionNumber, startTime: startTime, endTime: endTime)
         
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601

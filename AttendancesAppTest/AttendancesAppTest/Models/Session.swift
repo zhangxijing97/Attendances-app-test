@@ -10,8 +10,8 @@ import Foundation
 struct Session: Codable, Identifiable { // Attendance model for one student enroll in one track
     var id: UUID
     var track_id: UUID
-    var sessionNumber: String
     var date: Date
+    var sessionNumber: String
     var startTime: Date
     var endTime: Date
 }

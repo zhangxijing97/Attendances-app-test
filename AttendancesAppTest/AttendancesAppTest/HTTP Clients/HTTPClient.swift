@@ -19,7 +19,7 @@ class HTTPClient: ObservableObject {
     @Published var selectedView: Int = 1 // Property to select the View
     @Published var selectedDate = Date() // Property to select the Date
     
-    @Published var ipAddress: String = "192.168.0.219" // Property to set IP address
+    @Published var ipAddress: String = "192.168.0.123" // Property to set IP address
     
     init() {
         readData()
@@ -35,5 +35,5 @@ class HTTPClient: ObservableObject {
     
 // 192.168.0.219
 // 192.168.0.123
-// 172.20.10.1
+// 172.20.10.2
 }

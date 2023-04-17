@@ -24,7 +24,7 @@ struct TrackDetailView: View {
         return trackstudents.isEmpty ? nil : trackstudents
     }
     
-    // Get all attendances match the track
+    // Get all attendances match the trackstudents
     private func attendancesForTrack() -> [Attendance]? {
         guard let trackstudents = trackstudentsForTrack() else { return [] }
         let attendances = data.attendances.filter { attendance in
@@ -51,23 +51,30 @@ struct TrackDetailView: View {
         let attendances = attendancesForDate.filter { $0.sessionNumber == String(session) }
         return attendances.isEmpty ? nil : attendances
     }
-
-    // Get all trackstudents match the attendances
-    private func trackstudentsForAttendances() -> [TrackStudent]? {
-        guard let attendances = attendancesForSession() else { return nil }
-        let filteredTrackStudents = data.trackstudents.filter { trackstudent in
-            attendances.contains(where: { $0.trackstudent_id == trackstudent.id })
+    
+    // Function to get student for attendance
+    private func studentForAttendance(attendance: Attendance) -> Student? {
+        guard let trackStudent = data.trackstudents.first(where: { $0.id == attendance.trackstudent_id }) else {
+            return nil
         }
-        return filteredTrackStudents.isEmpty ? nil : filteredTrackStudents
+        return data.students.first(where: { $0.id == trackStudent.student_id })
     }
-
-    // Get all students match the trackstudents
-    private func studentsForTrackstudents() -> [Student]? {
-        guard let trackstudents = trackstudentsForAttendances() else { return nil }
-        let filteredStudents = data.students.filter { student in
-            trackstudents.contains(where: { $0.student_id == student.id })
-        }
-        return filteredStudents.isEmpty ? nil : filteredStudents
+    
+    // Get session
+    private func getSession() -> Session? {
+        let calendar = Calendar.current
+        
+        return data.sessions.first(where: { sessionObj in
+            let hoursInSeconds: TimeInterval = 60 * 60
+            let dateWithOffset = sessionObj.date.addingTimeInterval(hoursInSeconds * 7)
+            
+            let sessionDateComponents = calendar.dateComponents([.year, .month, .day], from: dateWithOffset)
+            let selectedDateComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
+            
+            return sessionObj.track_id == track.id &&
+                   sessionObj.sessionNumber == String(session) &&
+                   sessionDateComponents == selectedDateComponents
+        })
     }
     
     private func startDate() -> Date {
@@ -81,14 +88,47 @@ struct TrackDetailView: View {
         let endDate = track.endDate.addingTimeInterval(hoursInSeconds * 7)
         return endDate
     }
+    
+    private func totalAttendances() -> Int {
+        return attendancesForSession()?.count ?? 0
+    }
+    
+    // Get number of checkIn
+    private func numberOfCheckedInAttendances() -> Int {
+        guard let attendances = attendancesForSession() else { return 0 }
+        return attendances.filter { $0.checkInTime != Date(timeIntervalSince1970: 0) }.count
+    }
+    
+    // Get number of checkOut
+    private func numberOfCheckedOutAttendances() -> Int {
+        guard let attendances = attendancesForSession() else { return 0 }
+        return attendances.filter { $0.checkOutTime != Date(timeIntervalSince1970: 0) }.count
+    }
+    
+    
+   // Sorted Attendances
+    private func sortedAttendancesForSession() -> [Attendance]? {
+        guard let attendances = attendancesForSession() else { return nil }
+        return attendances.sorted {
+            guard let student1 = studentForAttendance(attendance: $0),
+                  let student2 = studentForAttendance(attendance: $1) else {
+                return false
+            }
+            return student1.name < student2.name
+        }
+    }
 
     var body: some View {
         
         List {
             Section {
-                Text(track.name)
-                Text(track.level)
-                Text(track.location)
+                Text("Track: \(track.name)")
+                Text("Level: \(track.level)")
+                Text("Location: \(track.location)")
+
+//                Text(track.name)
+//                Text(track.level)
+//                Text(track.location)
                 ForEach(track.sessions.indices) { index in
                     let session = track.sessions[index]
                     VStack {
@@ -107,21 +147,36 @@ struct TrackDetailView: View {
                     
                     Image(systemName: "calendar")
                     DatePicker("Select Date", selection: $selectedDate, in: startOfWeek...endOfWeek, displayedComponents: .date)
-                    }
-                    
-                    Picker("Session", selection: $session) {
-                        ForEach(track.sessions.indices) { index in
-                            Text("Session \(String(Character(UnicodeScalar(index + 65)!)).uppercased()) ")
-                        }
-                    }
+                }
                 
+                Picker("Session", selection: $session) {
+                    ForEach(track.sessions.indices) { index in
+                        Text("Session \(String(Character(UnicodeScalar(index + 65)!)).uppercased()) ")
+                    }
+                }
+                
+                let session = getSession()
+                if session == nil {
+                    EmptyView()
+                } else {
+                    Text("Start Time: \(session!.startTime.formatted(date: .omitted, time: .standard))")
+                    Text("End Time: \(session!.endTime.formatted(date: .omitted, time: .standard))")
+                    
+                    Text("Check In: \(numberOfCheckedInAttendances()) / \(totalAttendances())")
+                    Text("Check Out: \(numberOfCheckedOutAttendances()) / \(totalAttendances())")
+                }
+                
+            }
+            
+            Section {
+
                 HStack {
                     Text("All Students").bold()
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Text("Check in").bold()
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Text("Check out").bold()
-                    Spacer()
+                        .frame(maxWidth: .infinity, alignment: .leading)
                     Button {
                         showingAddStudentToTrackView.toggle()
                         
@@ -134,30 +189,39 @@ struct TrackDetailView: View {
                     .frame(alignment: .trailing)
                 }
                 
-                let attendances = attendancesForSession()
-                let students = studentsForTrackstudents()
+                let attendances = sortedAttendancesForSession()
+//                let attendances = attendancesForSession()
+//                let students = studentsForTrackstudents()
 
                 if attendances == nil {
                     EmptyView()
                 } else {
-                    ForEach(attendances!.indices) { index in
+                    ForEach(attendances!) { attendance in
                         HStack {
-                            if students == nil {
-                                EmptyView()
+                            if let student = studentForAttendance(attendance: attendance) {
+                                Text(student.name)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             } else {
-                                Text(students![index].name)
+                                Text("Unknown")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
-                            Spacer()
-                            CheckInView(data: data, attendance: attendances![index], onUpdate: {self.data.readData()})
-                            Spacer()
-                            CheckOutView(attendance: attendances![index])
-                            Spacer()
+                            CheckInView(data: data, attendance: attendance, onUpdate: {self.data.readData()})
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            CheckOutView(data: data, attendance: attendance, onUpdate: {self.data.readData()})
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                            HStack {
+                                Image(systemName: "slider.horizontal.3")
+                                Text("Edit")
+                            }
+                            .frame(alignment: .trailing)
+                            .foregroundColor(Color.white)
                         }
                     }
                     .onAppear {
                         self.data.readData()
                     }
                 }
+                
             }
         }
         .sheet(isPresented: $showingAddStudentToTrackView, onDismiss: {
