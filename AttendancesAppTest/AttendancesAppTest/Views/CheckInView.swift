@@ -82,26 +82,32 @@ struct CheckInView: View {
         let status = statusForAttendance()
         
         if status == .absent {
-            HStack {
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
-                Text("Absent")
-            }
-            .onTapGesture {
-                showAlert = true
-            }
-            .alert(isPresented: $showAlert) {
-                Alert(title: Text("Late Attendance"),
-                      message: Text("You are marked as absent. Do you want to update your attendance as late?"),
-                      primaryButton: .default(Text("Yes")) {
+            
+            if isLoading {
+                ProgressView()
+            } else {
+                HStack {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundColor(.orange)
+                    Text("Absent")
+                }
+                .onTapGesture {
+                    showAlert = true
+                }
+                .alert(isPresented: $showAlert) {
+                    Alert(title: Text("Late Attendance"),
+                          message: Text("You are marked as absent. Do you want to update your attendance as late?"),
+                          primaryButton: .default(Text("Update as Late")) {
                         let hoursInSeconds: TimeInterval = 60 * 60
                         let date = attendance.date.addingTimeInterval(hoursInSeconds * 7)
                         
                         let attendance = Attendance(id: attendance.id, trackstudent_id: attendance.trackstudent_id, date: date, sessionNumber: attendance.sessionNumber, checkInTime: Date(), checkOutTime: attendance.checkOutTime)
                         self.updateAttendance(attendance: attendance)
-                      },
-                      secondaryButton: .cancel(Text("Cancel")))
+                    },
+                          secondaryButton: .cancel(Text("Cancel")))
+                }
             }
+            
             
         } else if status == .ontime {
             HStack {
@@ -130,26 +136,23 @@ struct CheckInView: View {
                 showRealTime.toggle()
             }
         } else {
-            if attendance.checkInTime != Date(timeIntervalSince1970: 0) { // Check In Button For Section A
-                Text(attendance.checkInTime.formatted(date: .omitted, time: .standard))
+            
+            if isLoading {
+                ProgressView()
             } else {
-                if isLoading {
-                    ProgressView()
-                } else {
-                    Button(action: {}) {
-                        Text("Check In")
-                    }
-                    .onTapGesture {
-                        let hoursInSeconds: TimeInterval = 60 * 60
-                        let date = attendance.date.addingTimeInterval(hoursInSeconds * 7)
-                        
-                        let attendance = Attendance(id: attendance.id, trackstudent_id: attendance.trackstudent_id, date: date, sessionNumber: attendance.sessionNumber, checkInTime: Date(), checkOutTime: attendance.checkOutTime)
-                        self.updateAttendance(attendance: attendance)
-                    }
+                Button(action: {}) {
+                    Text("Check In")
+                }
+                .onTapGesture {
+                    let hoursInSeconds: TimeInterval = 60 * 60
+                    let date = attendance.date.addingTimeInterval(hoursInSeconds * 7)
+                    
+                    let attendance = Attendance(id: attendance.id, trackstudent_id: attendance.trackstudent_id, date: date, sessionNumber: attendance.sessionNumber, checkInTime: Date(), checkOutTime: attendance.checkOutTime)
+                    self.updateAttendance(attendance: attendance)
                 }
             }
+            
         }
-
     }
 }
 

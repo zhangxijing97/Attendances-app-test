@@ -11,6 +11,7 @@ struct AddStudentToTrackView: View {
     @ObservedObject var data: HTTPClient
     var track: Track
     @Binding var dismiss: Bool // For dismiss
+    @State private var isLoading = false
     
     var students: [Student] {
         let students = data.getStudentsForTrack(data: data, track: track)
@@ -28,6 +29,7 @@ struct AddStudentToTrackView: View {
     }
     
     private func createTrackStudent(student: Student) {
+        self.isLoading = true
         // Check if a TrackStudent with the given track and student id already exists
         guard let existingTrackStudent = data.trackstudents.first(where: { $0.track_id == track.id && $0.student_id == student.id }) else {
             // Create a new TrackStudent
@@ -41,6 +43,9 @@ struct AddStudentToTrackView: View {
                 } else {
                     // show user the error message that save was not successful
                     print("Failed to create TrackStudent")
+                }
+                DispatchQueue.main.async {
+                    self.isLoading = false
                 }
             }
             return
@@ -72,6 +77,7 @@ struct AddStudentToTrackView: View {
     }
     
     private func removeTrackStudent(student: Student) {
+        self.isLoading = true
         guard let trackStudent = data.getTrackStudentForTrackAndStudent(data: data, track: track, student: student) else {
             return
         }
@@ -83,6 +89,9 @@ struct AddStudentToTrackView: View {
             } else {
                 // show user the error message that delete was not successful
                 print("Failed to delete TrackStudent")
+            }
+            DispatchQueue.main.async {
+                self.isLoading = false
             }
         }
     }
@@ -119,21 +128,40 @@ struct AddStudentToTrackView: View {
                     Spacer()
                     
                     Button(action: {
-                        if data.getTrackStudentForTrackAndStudent(data: data, track: track, student: student) != nil {
-                            // Remove the student from the track
-                            self.removeTrackStudent(student: student)
+                        if isLoading { // Make sure user can do nothing when isLoading
                             
                         } else {
-                            // Add the student to the track
-                            self.createTrackStudent(student: student)
-                            
+                            if data.getTrackStudentForTrackAndStudent(data: data, track: track, student: student) != nil {
+                                // Remove the student from the track
+                                self.removeTrackStudent(student: student)
+                                
+                            } else {
+                                // Add the student to the track
+                                self.createTrackStudent(student: student)
+                                
+                            }
                         }
+                        
                     }) {
                         if data.getTrackStudentForTrackAndStudent(data: data, track: track, student: student) != nil {
-                            Text("Remove")
-                                .foregroundColor(.red)
+                            
+                            if isLoading {
+                                Text("Remove")
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Remove")
+                                    .foregroundColor(.red)
+                            }
+                            
                         } else {
-                            Text("Add")
+                            
+                            if isLoading {
+                                Text("Add")
+                                    .foregroundColor(.gray)
+                            } else {
+                                Text("Add")
+                            }
+                            
                         }
                     }
                      
